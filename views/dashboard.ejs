@@ -1,0 +1,16 @@
+<%- include('partials/nav') %>
+<div class="container py-5">
+    <h1 class="text-center mb-5">Яку мову будемо вчити? 🌍</h1>
+    <div class="row justify-content-center">
+        <% languages.forEach(lang => { %>
+            <div class="col-md-4 mb-4">
+                <a href="/training/<%= lang.language_id %>" class="text-decoration-none">
+                    <div class="card h-100 shadow-sm hover-effect text-center p-5">
+                        <h2 class="display-4 mb-3"><%= lang.language_name === 'English' ? '🇬🇧' : (lang.language_name === 'Spanish' ? '🇪🇸' : '🇩🇪') %></h2>
+                        <h3><%= lang.language_name %></h3>
+                    </div>
+                </a>
+            </div>
+        <% }) %>
+    </div>
+</div>

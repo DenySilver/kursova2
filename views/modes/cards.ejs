@@ -1,0 +1,140 @@
+<%- include('../partials/nav') %>
+<div class="container py-5 text-center">
+    <h2 class="mb-4"><%= title %></h2>
+
+    <% if(words.length === 0) { %>
+        <div class="alert alert-success mt-5">
+            <h3>🎉 Список пустий!</h3>
+            <p>Немає слів для відображення в цьому режимі.</p>
+            <a href="/dashboard" class="btn btn-primary">На головну</a>
+        </div>
+    <% } else { %>
+        <!-- Прогрес -->
+        <p class="text-muted">Картка <span id="current-index">1</span> з <%= words.length %></p>
+        
+        <!-- Контейнер для карток -->
+        <div class="d-flex justify-content-center mb-4">
+            <div id="card-area" class="flip-card w-100" style="max-width: 400px;" onclick="flipCard()">
+                <div class="flip-card-inner" id="card-inner">
+                    <!-- Передня частина -->
+                    <div class="flip-card-front">
+                        <img id="word-image" src="" height="80" class="mb-3 d-none">
+                        <h1 class="display-4 fw-bold" id="word-original"></h1>
+                        <p class="text-muted small">Натисни, щоб перевернути</p>
+                    </div>
+                    <!-- Задня частина -->
+                    <div class="flip-card-back">
+                        <h1 class="text-success" id="word-translation"></h1>
+                        <p class="fst-italic" id="word-context">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки управління -->
+        <div id="controls-area" class="d-flex justify-content-center gap-3">
+            <% if(mode === 'repetition') { %>
+                <!-- Режим повторення: Оцінюємо себе -->
+                <button class="btn btn-danger px-4 py-2" onclick="processRepetition('no')">Не знаю 😞</button>
+                <button class="btn btn-success px-4 py-2" onclick="processRepetition('yes')">Знаю! 😎</button>
+            <% } else { %>
+                <!-- Режим перегляду: Гортаємо -->
+                <button class="btn btn-secondary px-4" onclick="prevCard()">⬅ Назад</button>
+                <button class="btn btn-primary px-4" onclick="nextCard()">Далі ➡</button>
+            <% } %>
+        </div>
+
+        <!-- Скрипт логіки карток -->
+        <script>
+            // Отримуємо дані з сервера як JSON
+            const words = <%- JSON.stringify(words) %>;
+            const mode = "<%= mode %>";
+            let currentIndex = 0;
+
+            // Функція відображення поточної картки
+            function renderCard() {
+                if (currentIndex >= words.length) {
+                    document.querySelector('.container').innerHTML = `
+                        <div class="alert alert-success mt-5">
+                            <h3>🎉 Ви пройшли всі картки!</h3>
+                            <a href="/dashboard" class="btn btn-primary mt-3">На головну</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const word = words[currentIndex];
+                const cardInner = document.getElementById('card-inner');
+                
+                // Скидаємо поворот картки
+                document.getElementById('card-area').classList.remove('flipped');
+
+                // Заповнюємо даними (з невеликою затримкою, щоб не видно було підміни під час перевороту)
+                setTimeout(() => {
+                    document.getElementById('word-original').innerText = word.original;
+                    document.getElementById('word-translation').innerText = word.translation;
+                    document.getElementById('current-index').innerText = currentIndex + 1;
+
+                    // Картинка (якщо є)
+                    const img = document.getElementById('word-image');
+                    if (word.image_url && word.image_url !== 'null') {
+                        img.src = word.image_url;
+                        img.classList.remove('d-none');
+                    } else {
+                        img.classList.add('d-none');
+                    }
+                }, 200);
+            }
+
+            // Переворот картки
+            function flipCard() {
+                document.getElementById('card-area').classList.toggle('flipped');
+            }
+
+            // --- Логіка для "Флеш-карток" ---
+            function nextCard() {
+                if (currentIndex < words.length - 1) {
+                    currentIndex++;
+                    renderCard();
+                } else {
+                    alert("Це остання картка!");
+                }
+            }
+
+            function prevCard() {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    renderCard();
+                }
+            }
+
+            // --- Логіка для "Інтервального повторення" (AJAX) ---
+            function processRepetition(result) {
+                const word = words[currentIndex];
+                
+                // Відправляємо результат на сервер
+                fetch('/study/process', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        record_id: word.record_id, // ID запису в словнику
+                        is_correct: result
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    // Показуємо результат (бали) і переходимо далі
+                    console.log(`Earned: ${data.points_earned} XP`);
+                    currentIndex++;
+                    renderCard();
+                })
+                .catch(err => console.error(err));
+            }
+
+            // Запуск першої картки
+            renderCard();
+        </script>
+    <% } %>
+</div>
+</body>
+</html>

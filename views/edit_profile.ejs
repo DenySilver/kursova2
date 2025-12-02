@@ -1,0 +1,17 @@
+<%- include('partials/nav') %>
+<div class="container py-5">
+    <h1>Редагування профілю</h1>
+    <form action="/profile/edit" method="POST" class="mt-4" style="max-width: 500px;">
+        <div class="mb-3">
+            <label>Ім'я користувача</label>
+            <input type="text" name="username" class="form-control" value="<%= user.username %>" required>
+        </div>
+        <div class="mb-3">
+            <label>URL Аватара</label>
+            <input type="url" name="avatar_url" class="form-control" value="<%= user.avatar_url %>">
+            <div class="form-text">Вставте пряме посилання на зображення</div>
+        </div>
+        <button class="btn btn-success">Зберегти зміни</button>
+        <a href="/profile" class="btn btn-secondary">Скасувати</a>
+    </form>
+</div>

@@ -1,0 +1,33 @@
+<%- include('partials/nav') %>
+<div class="container py-5">
+    <div class="card shadow p-4">
+        <div class="d-flex justify-content-between">
+            <div class="d-flex align-items-center">
+                <img src="<%= user.avatar_url %>" class="rounded-circle me-4" width="100" height="100">
+                <div>
+                    <h2><%= user.username %></h2>
+                    <span class="badge bg-warning text-dark"><%= user.icon %> <%= user.league_name %></span>
+                    <p class="text-muted mt-2"><%= user.email %></p>
+                </div>
+            </div>
+            <a href="/profile/edit" class="btn btn-outline-secondary h-50">✏️ Редагувати</a>
+        </div>
+        
+        <hr class="my-4">
+        
+        <div class="row text-center">
+            <div class="col-md-4">
+                <h3 class="text-primary"><%= totalPoints %></h3>
+                <small>Всього XP</small>
+            </div>
+            <div class="col-md-4">
+                <h3><%= testsCount %></h3>
+                <small>Тестів пройдено</small>
+            </div>
+            <div class="col-md-4">
+                <h3><%= new Date(user.registration_date).toLocaleDateString() %></h3>
+                <small>З нами з</small>
+            </div>
+        </div>
+    </div>
+</div>

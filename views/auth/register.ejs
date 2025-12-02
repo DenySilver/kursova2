@@ -1,0 +1,29 @@
+<%- include('../partials/head', {title: 'Реєстрація'}) %>
+<body class="bg-light d-flex align-items-center justify-content-center" style="height: 100vh;">
+    <div class="card p-4 shadow" style="width: 400px;">
+        <h2 class="text-center mb-4">Реєстрація</h2>
+        
+        <% if(error) { %> 
+            <div class="alert alert-danger"><%= error %></div> 
+        <% } %>
+
+        <form action="/auth/register" method="POST">
+            <div class="mb-3">
+                <label class="form-label">Ім'я користувача</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Зареєструватися</button>
+        </form>
+        
+        <p class="text-center mt-3">Вже є акаунт? <a href="/auth/login">Увійти</a></p>
+    </div>
+</body>
+</html>

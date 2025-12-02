@@ -1,0 +1,48 @@
+<%- include('../partials/nav') %>
+<div class="container py-5 text-center" style="max-width: 600px;">
+    <h1>Тест</h1>
+    <form id="testForm">
+        <% questions.forEach((q, i) => { %>
+            <div class="card mb-4 text-start p-3">
+                <h5><%= i+1 %>. Як перекласти "<%= q.original %>"?</h5>
+                <% q.options.forEach(opt => { %>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="q<%= q.word_id %>" value="<%= opt %>" id="opt_<%= i %>_<%= opt %>">
+                        <label class="form-check-label" for="opt_<%= i %>_<%= opt %>"><%= opt %></label>
+                    </div>
+                <% }) %>
+                <input type="hidden" class="correct-answer" value="<%= q.translation %>" data-q="q<%= q.word_id %>">
+            </div>
+        <% }) %>
+        <button type="button" onclick="checkTest()" class="btn btn-primary w-100">Завершити тест</button>
+    </form>
+</div>
+
+<script>
+    function checkTest() {
+        let score = 0;
+        const answers = document.querySelectorAll('.correct-answer');
+        
+        answers.forEach(ans => {
+            const correct = ans.value;
+            const name = ans.dataset.q;
+            const selected = document.querySelector(`input[name="${name}"]:checked`);
+            
+            if (selected && selected.value === correct) {
+                score++;
+                selected.parentElement.classList.add('text-success', 'fw-bold');
+            } else if (selected) {
+                selected.parentElement.classList.add('text-danger');
+            }
+        });
+
+        alert(`Ваш результат: ${score} з ${answers.length}`);
+
+        // Відправка на сервер
+        fetch('/study/test/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ score: score, total: answers.length })
+        }).then(() => window.location.href = '/dashboard');
+    }
+</script>
