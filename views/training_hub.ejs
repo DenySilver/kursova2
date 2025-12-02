@@ -1,18 +1,15 @@
 <%- include('partials/nav') %>
 
 <div class="container py-5">
-    <!-- Заголовок і навігація -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="mb-0">Вивчення: <%= lang.language_name %></h1>
-            <p class="text-muted">Обери режим тренування або категорію</p>
         </div>
-        <a href="/dashboard" class="btn btn-outline-secondary">⬅ Змінити мову</a>
+        <a href="/user/<%= userId %>/dashboard" class="btn btn-outline-secondary">⬅ Змінити мову</a>
     </div>
 
-    <!-- 1. ВЕРХНІЙ БЛОК: Швидкі дії (Тест і Повторення) -->
+    <!-- Верхні картки -->
     <div class="row g-3 mb-5">
-        <!-- Картка повторення -->
         <div class="col-md-6">
             <div class="card bg-primary text-white shadow-sm h-100">
                 <div class="card-body d-flex justify-content-between align-items-center p-4">
@@ -20,25 +17,22 @@
                         <h4 class="mb-1">🧠 Інтервальне повторення</h4>
                         <% if (repetitionCount > 0) { %>
                             <span class="badge bg-light text-danger animate-pulse mb-2"><%= repetitionCount %> слів на сьогодні</span>
-                            <div class="small text-white-50">Алгоритм підібрав слова, які ви могли забути</div>
                         <% } else { %>
-                            <div class="small text-white-50">Всі слова на сьогодні повторені!</div>
+                            <div class="small text-white-50">Всі слова повторені!</div>
                         <% } %>
                     </div>
-                    <a href="/study/repetition/<%= lang.language_id %>" class="btn btn-light text-primary fw-bold px-4">Почати</a>
+                    <a href="/study/user/<%= userId %>/repetition/<%= lang.language_id %>" class="btn btn-light text-primary fw-bold px-4">Почати</a>
                 </div>
             </div>
         </div>
 
-        <!-- Картка тесту -->
         <div class="col-md-6">
             <div class="card bg-warning text-dark shadow-sm h-100">
                 <div class="card-body d-flex justify-content-between align-items-center p-4">
                     <div>
                         <h4 class="mb-1">📝 Тестування</h4>
-                        <div class="small text-dark-50">Перевір свої знання та зароби бали для ліги</div>
                     </div>
-                    <a href="/study/test/<%= lang.language_id %>" class="btn btn-dark fw-bold px-4">Пройти тест</a>
+                    <a href="/study/user/<%= userId %>/test/<%= lang.language_id %>" class="btn btn-dark fw-bold px-4">Пройти тест</a>
                 </div>
             </div>
         </div>
@@ -46,57 +40,21 @@
 
     <hr class="mb-4">
 
-    <!-- 2. НИЖНІЙ БЛОК: Каталог категорій -->
-    
-    <!-- Панель інструментів (Пошук і Сортування) -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <h3 class="mb-0">📂 Категорії слів</h3>
-        
-        <div class="d-flex gap-2">
-            <input type="text" id="searchInput" class="form-control" placeholder="🔍 Пошук категорії..." style="width: 200px;">
-            <select id="sortSelect" class="form-select" style="width: 200px;">
-                <option value="name">За назвою (А-Я)</option>
-                <option value="difficulty">За складністю</option>
-                <option value="count">Кількість слів</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Сітка категорій -->
-    <div class="row g-4" id="categoriesContainer">
+    <!-- Каталог -->
+    <h3 class="mb-4">📂 Категорії слів</h3>
+    <div class="row g-4">
         <% categories.forEach(cat => { 
-            // Визначаємо стилі для складності
             let colorClass = 'border-success'; 
-            let badgeClass = 'bg-success';
-            let icon = '🌱'; // Easy
-
-            if (cat.difficulty_level === 'Medium') {
-                colorClass = 'border-warning';
-                badgeClass = 'bg-warning text-dark';
-                icon = '⚡';
-            } else if (cat.difficulty_level === 'Hard') {
-                colorClass = 'border-danger';
-                badgeClass = 'bg-danger';
-                icon = '🔥';
-            }
+            if (cat.difficulty_level === 'Medium') colorClass = 'border-warning';
+            if (cat.difficulty_level === 'Hard') colorClass = 'border-danger';
         %>
-            <div class="col-md-4 category-item" 
-                 data-name="<%= cat.category_name.toLowerCase() %>" 
-                 data-difficulty="<%= cat.difficulty_level %>"
-                 data-count="<%= cat.word_count %>">
-                 
-                <a href="/study/cards/<%= lang.language_id %>/cat/<%= cat.category_id %>" class="text-decoration-none text-dark">
+            <div class="col-md-4">
+                <a href="/study/user/<%= userId %>/cards/<%= lang.language_id %>/cat/<%= cat.category_id %>" class="text-decoration-none text-dark">
                     <div class="card h-100 shadow-sm hover-effect border-top border-4 <%= colorClass %>">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <span class="fs-4"><%= icon %></span>
-                                <span class="badge <%= badgeClass %> rounded-pill"><%= cat.difficulty_level %></span>
-                            </div>
-                            
-                            <h3 class="card-title fw-bold mb-2"><%= cat.category_name %></h3>
-                            <p class="text-muted mb-4"><%= cat.word_count %> слів</p>
-
-                            <button class="btn btn-outline-dark w-100 rounded-pill">Вчити картки</button>
+                        <div class="card-body p-4 text-center">
+                            <h3 class="fw-bold mb-2"><%= cat.category_name %></h3>
+                            <p class="text-muted"><%= cat.word_count %> слів</p>
+                            <span class="badge bg-light text-dark border"><%= cat.difficulty_level %></span>
                         </div>
                     </div>
                 </a>
@@ -104,54 +62,3 @@
         <% }) %>
     </div>
 </div>
-
-<!-- Скрипт для пошуку та сортування "на льоту" -->
-<script>
-    const searchInput = document.getElementById('searchInput');
-    const sortSelect = document.getElementById('sortSelect');
-    const container = document.getElementById('categoriesContainer');
-    const items = Array.from(document.querySelectorAll('.category-item'));
-
-    // Пошук
-    searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        items.forEach(item => {
-            const name = item.dataset.name;
-            if (name.includes(term)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-
-    // Сортування
-    sortSelect.addEventListener('change', (e) => {
-        const type = e.target.value;
-        const sorted = items.sort((a, b) => {
-            if (type === 'name') {
-                return a.dataset.name.localeCompare(b.dataset.name);
-            } else if (type === 'count') {
-                // Від більшого до меншого
-                return parseInt(b.dataset.count) - parseInt(a.dataset.count);
-            } else if (type === 'difficulty') {
-                const map = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
-                return map[a.dataset.difficulty] - map[b.dataset.difficulty];
-            }
-        });
-        
-        // Перемальовуємо контейнер
-        container.innerHTML = '';
-        sorted.forEach(item => container.appendChild(item));
-    });
-</script>
-
-<style>
-    /* Анімація для кнопки повторення */
-    .animate-pulse { animation: pulse 2s infinite; }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
-</style>

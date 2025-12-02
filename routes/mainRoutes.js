@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const mainController = require('../controllers/mainController');
-const isAuth = require('../middleware/isAuth');
 
-router.get('/', (req, res) => res.redirect('/dashboard')); // Редірект на дашборд
-router.get('/dashboard', isAuth, mainController.getDashboard);
-router.get('/training/:langId', isAuth, mainController.getTrainingHub);
+router.get('/', mainController.getIndex);
+router.get('/user/:userId/dashboard', mainController.getDashboard);
+router.get('/user/:userId/training/:langId', mainController.getTrainingHub);
+router.get('/user/:userId', mainController.getProfile);
+router.get('/leaderboard', mainController.getLeaderboard);
 
-router.get('/profile', isAuth, mainController.getProfile);
-router.get('/profile/edit', isAuth, mainController.getEditProfile);
-router.post('/profile/edit', isAuth, mainController.postEditProfile);
+router.get('/user/:userId/edit', mainController.getEditProfile);
+router.post('/user/:userId/edit', mainController.postEditProfile);
 
 module.exports = router;

@@ -1,20 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const studyController = require('../controllers/studyController');
-const isAuth = require('../middleware/isAuth');
 
-// Інтервальне повторення
-router.get('/repetition/:langId', isAuth, studyController.getRepetition);
-
-// Картки (загальні та по категоріях)
-router.get('/cards/:langId', isAuth, studyController.getFlashcards);
-router.get('/cards/:langId/cat/:catId', isAuth, studyController.getFlashcards);
-
-// Тести
-router.get('/test/:langId', isAuth, studyController.getTest);
-router.post('/test/submit', isAuth, studyController.postTestResult);
-
-// AJAX обробка (тепер беремо з того ж studyController)
-router.post('/process', isAuth, studyController.processReview); 
+router.get('/user/:userId/cards/:langId/cat/:catId', studyController.getCategorySession);
+router.get('/user/:userId/repetition/:langId', studyController.getRepetition);
+router.get('/user/:userId/test/:langId', studyController.getTest);
+router.post('/user/:userId/test/submit', studyController.postTestResult);
+router.post('/process', studyController.processReview);
 
 module.exports = router;
