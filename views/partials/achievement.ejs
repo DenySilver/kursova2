@@ -1,0 +1,91 @@
+<div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+</div>
+
+<script>
+    function showAchievement(achievements) {
+        if (!achievements || achievements.length === 0) return;
+
+        achievements.forEach(ach => {
+            createToast(ach);
+        });
+    }
+
+    function createToast(ach) {
+        const container = document.getElementById('toast-container');
+        
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast show mb-3 shadow-lg border-0 animate-slide-in';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.style.backgroundColor = '#fff';
+        toastEl.style.minWidth = '300px';
+        toastEl.style.borderLeft = '5px solid #ffc107';
+
+        toastEl.innerHTML = `
+            <div class="d-flex p-3 align-items-center">
+                <div class="display-6 me-3">${ach.icon_url || '🏆'}</div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold text-warning mb-0 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
+                        Отримано досягнення!
+                    </h6>
+                    <strong class="d-block text-dark mb-1">${ach.name}</strong>
+                    <small class="text-muted">${ach.description}</small>
+                </div>
+                <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+
+        container.appendChild(toastEl);
+        playSuccessSound();
+        setTimeout(() => {
+            toastEl.classList.remove('animate-slide-in');
+            toastEl.classList.add('animate-fade-out');
+            
+            setTimeout(() => {
+                if (toastEl.parentElement) toastEl.remove();
+            }, 500); 
+        }, 5000);
+    }
+
+    function playSuccessSound() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            }
+        } catch (e) { console.log('Audio error', e); }
+    }
+</script>
+
+<style>
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOutUp {
+        to { transform: translateY(-20px); opacity: 0; }
+    }
+
+    .animate-slide-in {
+        animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .animate-fade-out {
+        animation: fadeOutUp 0.5s ease-in forwards;
+    }
+</style>

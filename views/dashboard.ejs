@@ -1,16 +1,33 @@
 <%- include('partials/nav') %>
+
 <div class="container py-5">
-    <h1 class="text-center mb-5">Яку мову будемо вчити? 🌍</h1>
-    <div class="row justify-content-center">
-        <% languages.forEach(lang => { %>
-            <div class="col-md-4 mb-4">
-                <a href="/training/<%= lang.language_id %>" class="text-decoration-none">
-                    <div class="card h-100 shadow-sm hover-effect text-center p-5">
-                        <h2 class="display-4 mb-3"><%= lang.language_name === 'English' ? '🇬🇧' : (lang.language_name === 'Spanish' ? '🇪🇸' : '🇩🇪') %></h2>
-                        <h3><%= lang.language_name %></h3>
+    <div class="row">
+    
+        <div class="col-md-9">
+            <h1 class="text-center mb-5">Оберіть мову для вивчення</h1>
+            
+            <div class="row justify-content-center">
+                <% languages.forEach(lang => { %>
+                    <div class="col-md-4 mb-4">
+                        <a href="/user/<%= userId %>/training/<%= lang.language_id %>" class="text-decoration-none">
+                            <div class="card h-100 shadow-sm hover-effect text-center p-5 border-0 bg-white">
+                                <div class="mb-3 display-1">
+                                    <% if(lang.language_name === 'English') { %> 🇬🇧 <% } %>
+                                    <% if(lang.language_name === 'Spanish') { %> 🇪🇸 <% } %>
+                                    <% if(lang.language_name === 'German') { %> 🇩🇪 <% } %>
+                                </div>
+                                <h3 class="text-dark fw-bold"><%= lang.language_name %></h3>
+                                <p class="text-muted">Натисніть, щоб почати</p>
+                            </div>
+                        </a>
                     </div>
-                </a>
+                <% }) %>
             </div>
-        <% }) %>
+        </div>
     </div>
 </div>
+
+<style>
+    .hover-effect { transition: transform 0.2s; }
+    .hover-effect:hover { transform: translateY(-5px); cursor: pointer; }
+</style>

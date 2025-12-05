@@ -1,33 +1,265 @@
 <%- include('partials/nav') %>
+
 <div class="container py-5">
-    <div class="card shadow p-4">
-        <div class="d-flex justify-content-between">
-            <div class="d-flex align-items-center">
-                <img src="<%= user.avatar_url %>" class="rounded-circle me-4" width="100" height="100">
-                <div>
-                    <h2><%= user.username %></h2>
-                    <span class="badge bg-warning text-dark"><%= user.icon %> <%= user.league_name %></span>
-                    <p class="text-muted mt-2"><%= user.email %></p>
+    
+    <div class="mb-4">
+        <a href="<%= backLink %>" class="btn btn-outline-secondary rounded-pill px-4">
+            ⬅ Назад
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow p-4 border-0 mb-4" style="border-radius: 20px;">
+                <div class="text-center">
+                    <img src="<%= user.avatar_url %>" class="rounded-circle border shadow-sm mb-3" width="120" height="120" style="object-fit: cover;">
+                    <h3 class="mb-1 fw-bold"><%= user.username %></h3>
+                    <p class="text-muted mb-2"><%= user.email %></p>
+                    <span class="badge bg-warning text-dark border px-3 py-2 rounded-pill">
+                        <%= user.icon %> <%= user.league_name %>
+                    </span>
+                    <div class="mt-3 d-flex gap-2 justify-content-center justify-content-md-start">
+    
+                        <a href="/user/<%= userId %>/certificate" class="btn btn-success btn-sm rounded-pill px-4 shadow-sm fw-bold d-flex align-items-center" target="_blank">
+                            <i class="bi bi-award-fill me-2"></i> Отримати Сертифікат
+                        </a>
+                        <a href="/user/<%= userId %>/edit" class="btn btn-outline-primary btn-sm rounded-pill px-4 d-flex align-items-center">
+                            <i class="bi bi-pencil me-2"></i> Редагувати
+                        </a>
+
+                    </div>
+                </div>
+                <hr class="my-3">
+                <div class="d-flex justify-content-between text-center">
+                    <div>
+                        <h5 class="fw-bold text-primary mb-0"><%= totalPoints %></h5>
+                        <small class="text-muted" style="font-size: 0.75rem;">Всього XP</small>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-success"><%= stats.maxStreak %> 🔥</h5>
+                        <small class="text-muted" style="font-size: 0.75rem;">Max Стрік</small>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0"><%= testsCount %></h5>
+                        <small class="text-muted" style="font-size: 0.75rem;">Тестів</small>
+                    </div>
                 </div>
             </div>
-            <a href="/profile/edit" class="btn btn-outline-secondary h-50">✏️ Редагувати</a>
+
+            <div class="card shadow border-0 p-4 mb-4" style="border-radius: 20px;">
+                <h5 class="fw-bold mb-4">Активність (Цей тиждень)</h5>
+                
+                <div class="d-flex justify-content-between align-items-end" style="height: 150px;">
+                    <% 
+                    const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+                    // Перевірка на undefined, щоб уникнути помилок
+                    const chartData = (typeof activity !== 'undefined' && activity.data) ? activity.data : [0,0,0,0,0,0,0];
+                    const chartMax = (typeof activity !== 'undefined' && activity.max) ? activity.max : 10;
+
+                    chartData.forEach((score, i) => { 
+                        // Вираховуємо висоту у відсотках
+                        let heightPercent = Math.round((score / chartMax) * 100);
+                        // Мінімальна висота 4px для візуалізації навіть пустих днів
+                        let barHeight = score > 0 ? `${heightPercent}%` : '4px';
+                        // Колір: активний (синій) або пустий (світло-сірий)
+                        let barColor = score > 0 ? 'background-color: #0d6efd;' : 'background-color: #e9ecef;';
+                    %>
+                        <div class="text-center d-flex flex-column align-items-center justify-content-end h-100" style="width: 12%;">
+                            
+                            <div style="height: 20px;" class="mb-1">
+                                <% if (score > 0) { %>
+                                    <small class="text-primary fw-bold" style="font-size: 0.65rem;"><%= score %></small>
+                                <% } %>
+                            </div>
+
+                            <div class="w-100 rounded-3" 
+                                 style="height: <%= barHeight %>; <%= barColor %> transition: height 0.5s ease;" 
+                                 title="<%= score %> XP"></div>
+                            
+                            <small class="mt-2 text-muted fw-bold" style="font-size: 0.75rem;"><%= days[i] %></small>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
         </div>
-        
-        <hr class="my-4">
-        
-        <div class="row text-center">
-            <div class="col-md-4">
-                <h3 class="text-primary"><%= totalPoints %></h3>
-                <small>Всього XP</small>
+
+        <div class="col-lg-8">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white shadow-sm rounded-4 border h-100 d-flex align-items-center">
+                        <div>
+                            <h4 class="fw-bold mb-0 text-success"><%= stats.learnedWords %> <span class="text-muted fs-6">/ <%= stats.totalWords %></span></h4>
+                            <small class="text-muted fw-bold">Вивчено слів</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white shadow-sm rounded-4 border h-100 d-flex align-items-center">
+                        <div>
+                            <h4 class="fw-bold mb-0 text-info"><%= stats.avgLevel %></h4>
+                            <small class="text-muted fw-bold">Середній рівень</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white shadow-sm rounded-4 border h-100 d-flex align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0"><%= user.formatted_date %></h5>
+                            <small class="text-muted fw-bold">Дата реєстрації</small>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-4">
-                <h3><%= testsCount %></h3>
-                <small>Тестів пройдено</small>
+
+            <!-- Досягнення -->
+            <div class="card shadow border-0 p-4 mb-4" style="border-radius: 20px;">
+                <h5 class="fw-bold mb-3">🏆 Мої досягнення</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <% if(achievements.length === 0) { %>
+                        <div class="text-muted fst-italic">Ще немає досягнень...</div>
+                    <% } %>
+                    <% achievements.forEach(a => { %>
+                        <div class="badge bg-light text-dark border p-2 d-flex align-items-center gap-2 rounded-pill px-3">
+                            <span class="fs-5"><%= a.icon_url %></span>
+                            <span><%= a.name %></span>
+                        </div>
+                    <% }) %>
+                </div>
             </div>
-            <div class="col-md-4">
-                <h3><%= new Date(user.registration_date).toLocaleDateString() %></h3>
-                <small>З нами з</small>
+
+            <div class="card shadow border-0 p-4" style="border-radius: 20px;">
+                <div class="row align-items-center mb-4 g-3">
+                    <div class="col-md-4">
+                        <h5 class="fw-bold mb-0">
+                            📚 Словник 
+                            <span class="badge bg-light text-dark border ms-2" id="visible-count"><%= dictionary.length %></span>
+                        </h5>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                            <input type="text" id="dictSearch" class="form-control form-control-sm" placeholder="🔍 Пошук..." style="max-width: 150px;">
+                            
+                            <select id="dictFilter" class="form-select form-select-sm" style="max-width: 120px;">
+                                <option value="all">Всі</option>
+                                <option value="learning">Вчу</option>
+                                <option value="learned">Вивчені</option>
+                            </select>
+
+                            <select id="dictSort" class="form-select form-select-sm" style="max-width: 140px;">
+                                <option value="newest">Спочатку нові</option>
+                                <option value="oldest">Спочатку старі</option>
+                                <option value="name_asc">За назвою A-Z</option>
+                                <option value="level_desc">За рівнем вивчення ⬇</option>
+                                <option value="level_asc">За рівнем вивчення ⬆</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <% if(dictionary.length === 0) { %>
+                    <div class="alert alert-light text-center py-4 border bg-light rounded-4">
+                        <p class="text-muted mb-2">Словник порожній</p>
+                        <a href="/user/<%= userId %>/dashboard" class="btn btn-sm btn-primary rounded-pill">Вчити слова</a>
+                    </div>
+                <% } else { %>
+                    <div class="table-responsive rounded-4 border" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-hover bg-white mb-0 align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="ps-4">Слово</th>
+                                    <th>Переклад</th>
+                                    <th>Статус</th>
+                                    <th class="pe-4">Рівень</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dictBody">
+                                <% dictionary.forEach(w => { %>
+                                <tr class="word-row" 
+                                    data-original="<%= w.original.toLowerCase() %>" 
+                                    data-translation="<%= w.translation.toLowerCase() %>"
+                                    data-status="<%= w.status %>"
+                                    data-level="<%= w.repetition_level %>"
+                                    data-id="<%= w.id %>">
+                                    
+                                    <td class="ps-4 fw-bold text-primary"><%= w.original %></td>
+                                    <td><%= w.translation %></td>
+                                    <td>
+                                        <% if(w.status === 'learning') { %><span class="badge bg-primary rounded-pill">Вчу</span><% } %>
+                                        <% if(w.status === 'learned') { %><span class="badge bg-success rounded-pill">Вивчено</span><% } %>
+                                        <% if(w.status === 'new') { %><span class="badge bg-secondary rounded-pill">Нове</span><% } %>
+                                    </td>
+                                    <td class="pe-4" style="min-width: 120px;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px;">
+                                                <div class="progress-bar bg-success" style="width: <%= Math.min(w.repetition_level * 20, 100) %>%"></div>
+                                            </div>
+                                            <small class="text-muted fw-bold" style="width: 20px;"><%= w.repetition_level %></small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="noResults" class="text-center py-4 d-none text-muted">Нічого не знайдено</div>
+                <% } %>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('dictSearch');
+        const filterSelect = document.getElementById('dictFilter');
+        const sortSelect = document.getElementById('dictSort');
+        const tableBody = document.getElementById('dictBody');
+        const noResults = document.getElementById('noResults');
+        const countBadge = document.getElementById('visible-count');
+        
+        if (!tableBody) return;
+
+        let rows = Array.from(document.querySelectorAll('.word-row'));
+
+        function updateTable() {
+            const term = searchInput.value.toLowerCase();
+            const filter = filterSelect.value;
+            const sort = sortSelect.value;
+            
+            let visibleRows = rows.filter(row => {
+                const original = row.dataset.original;
+                const translation = row.dataset.translation;
+                const status = row.dataset.status;
+                const matchesSearch = original.includes(term) || translation.includes(term);
+                const matchesFilter = (filter === 'all') || (filter === status);
+                return matchesSearch && matchesFilter;
+            });
+
+            visibleRows.sort((a, b) => {
+                if (sort === 'name_asc') return a.dataset.original.localeCompare(b.dataset.original);
+                if (sort === 'level_desc') return parseInt(b.dataset.level) - parseInt(a.dataset.level);
+                if (sort === 'level_asc') return parseInt(a.dataset.level) - parseInt(b.dataset.level);
+                if (sort === 'newest') return parseInt(b.dataset.id) - parseInt(a.dataset.id);
+                if (sort === 'oldest') return parseInt(a.dataset.id) - parseInt(b.dataset.id);
+                return 0;
+            });
+
+            tableBody.innerHTML = '';
+            visibleRows.forEach(row => tableBody.appendChild(row));
+            countBadge.innerText = visibleRows.length;
+            
+            if (visibleRows.length === 0) {
+                noResults.classList.remove('d-none');
+                tableBody.parentElement.classList.add('d-none');
+            } else {
+                noResults.classList.add('d-none');
+                tableBody.parentElement.classList.remove('d-none');
+            }
+        }
+
+        searchInput.addEventListener('input', updateTable);
+        filterSelect.addEventListener('change', updateTable);
+        sortSelect.addEventListener('change', updateTable);
+    });
+</script>

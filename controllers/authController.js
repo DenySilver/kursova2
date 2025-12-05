@@ -7,7 +7,7 @@ exports.postRegister = async (req, res) => {
     const { username, email, password } = req.body;
     try {
         await db.runDBCommand(`
-            INSERT INTO \`User\` (username, email, password_hash) 
+            INSERT INTO \`User\` (username, email, password) 
             VALUES ('${username}', '${email}', '${password}')
         `);
         res.redirect('/auth/login');
@@ -24,7 +24,7 @@ exports.postLogin = async (req, res) => {
         if (users.length === 0) return res.render('auth/login', { error: 'Користувача не знайдено' });
 
         const user = users[0];
-        if (password === user.password_hash) {
+        if (password === user.password) {
             res.redirect(`/user/${user.user_id}/dashboard`);
         } else {
             res.render('auth/login', { error: 'Невірний пароль' });

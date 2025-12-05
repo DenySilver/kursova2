@@ -1,0 +1,192 @@
+<%- include('../partials/nav') %>
+
+<div class="container py-5 text-center" style="max-width: 700px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div class="timer-box p-3 rounded-pill bg-light shadow-sm border d-flex align-items-center gap-2" style="min-width: 120px;">
+            <span class="fs-4">⏱️</span>
+            <span class="fs-3 fw-bold text-danger" id="timer">60</span>
+        </div>
+        
+        <div class="score-box p-3 rounded-pill bg-light shadow-sm border d-flex align-items-center gap-2" style="min-width: 120px; justify-content: center;">
+            <span class="fs-4">⭐</span>
+            <span class="fs-3 fw-bold text-warning" id="current-score">0</span>
+        </div>
+    </div>
+
+    <div class="card shadow-lg border-0 rounded-4 overflow-hidden position-relative mb-5 animate-fade-in" style="min-height: 350px;">
+        <div class="progress" style="height: 6px;">
+            <div id="time-bar" class="progress-bar bg-danger" style="width: 100%; transition: width 1s linear;"></div>
+        </div>
+
+        <div class="card-body d-flex flex-column justify-content-center align-items-center p-5">
+            <h6 class="text-muted text-uppercase fw-bold mb-4 ls-1">Чи вірний переклад?</h6>
+            
+            <h1 class="display-3 fw-bold mb-3 text-primary" id="word-original">Готові?</h1>
+            
+            <div class="my-3 position-relative w-100">
+                <hr class="border-secondary opacity-25 w-50 mx-auto">
+            </div>
+
+            <h2 class="display-5 fw-bold text-success mb-4" id="word-translation">...</h2>
+            
+            <div class="d-flex gap-5 w-100 justify-content-center mt-3" id="game-controls">
+                <button onclick="checkAnswer(false)" class="btn btn-outline-danger btn-lg rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm hover-scale transition-all" style="width: 80px; height: 80px; border-width: 3px;">
+                    <i class="bi bi-x-lg fs-1"></i>
+                </button>
+                <button onclick="checkAnswer(true)" class="btn btn-outline-success btn-lg rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm hover-scale transition-all" style="width: 80px; height: 80px; border-width: 3px;">
+                    <i class="bi bi-check-lg fs-1"></i>
+                </button>
+            </div>
+            
+            <div id="start-overlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white d-flex flex-column justify-content-center align-items-center" style="z-index: 10;">
+                <div class="mb-3 display-1">🔥</div>
+                <h2 class="fw-bold mb-2">Режим Спринт</h2>
+                <p class="text-muted mb-4 fs-5">1 хвилина. Якнайбільше правильних відповідей.</p>
+                <button onclick="startGame()" class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow fw-bold hover-scale">
+                    🚀 Почати
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="results-modal" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center results-backdrop">
+    <div class="card border-0 shadow-lg p-4 text-center animate-zoom-in" style="max-width: 450px; width: 90%; border-radius: 20px; background: rgba(255, 255, 255, 0.98);">
+        <div class="card-body">
+            <div class="mb-3 position-relative d-inline-block">
+                <span class="display-1">🏁</span>
+            </div>
+            
+            <h2 class="fw-bold mb-2">Час вийшов!</h2>
+            <p class="text-muted mb-4">Чудова реакція! Ваш результат:</p>
+            
+            <div class="p-4 bg-light rounded-4 border mb-4">
+                <div class="text-muted small text-uppercase fw-bold mb-1">Зароблено</div>
+                <div class="display-4 fw-bold text-warning mb-0">
+                    +<span id="final-score">0</span> <span class="fs-4 text-dark">XP</span>
+                </div>
+            </div>
+
+            <a href="/user/<%= userId %>/dashboard" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm hover-scale transition-all">
+                Повернутися в меню 🏠
+            </a>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/achievement') %>
+
+<script>
+    const wordsPool = <%- JSON.stringify(words) %>;
+    const userId = "<%= userId %>";
+    const langId = "<%= langId %>";
+    
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval;
+    let currentPair = {}; 
+
+    function startGame() {
+        if (wordsPool.length < 2) {
+            alert("Замало слів для гри! Спочатку додайте слова в базу.");
+            return;
+        }
+        document.getElementById('start-overlay').classList.add('d-none');
+        score = 0;
+        timeLeft = 60;
+        updateUI();
+        nextCard();
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            document.getElementById('time-bar').style.width = (timeLeft / 60 * 100) + '%';
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function nextCard() {
+        const correctWord = wordsPool[Math.floor(Math.random() * wordsPool.length)];
+        const isCorrect = Math.random() < 0.5;
+        let displayTranslation = correctWord.translation;
+
+        if (!isCorrect) {
+            let wrongWord;
+            do {
+                wrongWord = wordsPool[Math.floor(Math.random() * wordsPool.length)];
+            } while (wrongWord.word_id === correctWord.word_id);
+            displayTranslation = wrongWord.translation;
+        }
+
+        currentPair = { isMatch: isCorrect };
+
+        document.getElementById('word-original').innerText = correctWord.original;
+        document.getElementById('word-translation').innerText = displayTranslation;
+    }
+
+    function checkAnswer(userAnswer) {
+        if (userAnswer === currentPair.isMatch) {
+            score += 10; 
+            pulseAnimation('success');
+        } else {
+            pulseAnimation('danger');
+        }
+        updateUI();
+        nextCard();
+    }
+
+    function updateUI() {
+        document.getElementById('current-score').innerText = score;
+    }
+
+    function pulseAnimation(color) {
+        const card = document.querySelector('.card');
+        card.classList.add(`border-${color}`, 'border-3');
+        setTimeout(() => card.classList.remove(`border-${color}`, 'border-3'), 200);
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('results-modal').classList.remove('d-none');
+
+        fetch(`/study/user/${userId}/sprint/submit`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ userId, score, langId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.newAchievements && data.newAchievements.length > 0) {
+                if (typeof showAchievement === "function") {
+                    showAchievement(data.newAchievements);
+                }
+            }
+        })
+        .catch(err => console.error(err));
+    }
+</script>
+
+<style>
+    .ls-1 { letter-spacing: 1px; }
+    .hover-scale:hover { transform: scale(1.1); transition: 0.2s; }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .results-backdrop {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 10000;
+        animation: fadeInBackdrop 0.3s ease-out;
+    }
+    .animate-zoom-in { animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes fadeInBackdrop { from { opacity: 0; } to { opacity: 1; } }
+</style>

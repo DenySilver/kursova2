@@ -1,64 +1,213 @@
 <%- include('partials/nav') %>
 
 <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="mb-0">Вивчення: <%= lang.language_name %></h1>
-        </div>
-        <a href="/user/<%= userId %>/dashboard" class="btn btn-outline-secondary">⬅ Змінити мову</a>
-    </div>
-
-    <!-- Верхні картки -->
-    <div class="row g-3 mb-5">
-        <div class="col-md-6">
-            <div class="card bg-primary text-white shadow-sm h-100">
-                <div class="card-body d-flex justify-content-between align-items-center p-4">
-                    <div>
-                        <h4 class="mb-1">🧠 Інтервальне повторення</h4>
-                        <% if (repetitionCount > 0) { %>
-                            <span class="badge bg-light text-danger animate-pulse mb-2"><%= repetitionCount %> слів на сьогодні</span>
-                        <% } else { %>
-                            <div class="small text-white-50">Всі слова повторені!</div>
-                        <% } %>
-                    </div>
-                    <a href="/study/user/<%= userId %>/repetition/<%= lang.language_id %>" class="btn btn-light text-primary fw-bold px-4">Почати</a>
+    <div class="row">
+        
+        <div class="col-lg-9">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-0 fw-bold">Вивчення: <%= lang.language_name %></h1>
+                    <p class="text-muted">Обери режим тренування або категорію</p>
                 </div>
+                <a href="/user/<%= userId %>/dashboard" class="btn btn-outline-secondary">⬅ Інші мови</a>
             </div>
-        </div>
 
-        <div class="col-md-6">
-            <div class="card bg-warning text-dark shadow-sm h-100">
-                <div class="card-body d-flex justify-content-between align-items-center p-4">
-                    <div>
-                        <h4 class="mb-1">📝 Тестування</h4>
-                    </div>
-                    <a href="/study/user/<%= userId %>/test/<%= lang.language_id %>" class="btn btn-dark fw-bold px-4">Пройти тест</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <hr class="mb-4">
-
-    <!-- Каталог -->
-    <h3 class="mb-4">📂 Категорії слів</h3>
-    <div class="row g-4">
-        <% categories.forEach(cat => { 
-            let colorClass = 'border-success'; 
-            if (cat.difficulty_level === 'Medium') colorClass = 'border-warning';
-            if (cat.difficulty_level === 'Hard') colorClass = 'border-danger';
-        %>
-            <div class="col-md-4">
-                <a href="/study/user/<%= userId %>/cards/<%= lang.language_id %>/cat/<%= cat.category_id %>" class="text-decoration-none text-dark">
-                    <div class="card h-100 shadow-sm hover-effect border-top border-4 <%= colorClass %>">
-                        <div class="card-body p-4 text-center">
-                            <h3 class="fw-bold mb-2"><%= cat.category_name %></h3>
-                            <p class="text-muted"><%= cat.word_count %> слів</p>
-                            <span class="badge bg-light text-dark border"><%= cat.difficulty_level %></span>
+            <div class="row g-3 mb-5">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white shadow h-100 border-0 overflow-hidden position-relative">
+                        <div class="card-body p-4 position-relative" style="z-index: 2;">
+                            <h4 class="mb-2">🧠 Повторення</h4>
+                            <% if (typeof repetitionCount !== 'undefined' && repetitionCount > 0) { %>
+                                <span class="badge bg-white text-primary mb-2"><%= repetitionCount %> слів</span>
+                            <% } else { %>
+                                <small class="opacity-75 d-block mb-3">Немає слів</small>
+                            <% } %>
+                            <a href="/study/user/<%= userId %>/repetition/<%= lang.language_id %>" class="btn btn-sm btn-light text-primary fw-bold w-100 stretched-link">Почати</a>
                         </div>
+                        <div class="position-absolute top-0 end-0 bg-white opacity-10 rounded-circle" style="width: 150px; height: 150px; margin-top: -30px; margin-right: -30px;"></div>
                     </div>
-                </a>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card bg-danger text-white shadow h-100 border-0 overflow-hidden position-relative">
+                        <div class="card-body p-4 position-relative" style="z-index: 2;">
+                            <h4 class="mb-2">🔥 Спринт</h4>
+                            <p class="small opacity-75 mb-3">60 секунд. Перевір свою реакцію!</p>
+                            <a href="/study/user/<%= userId %>/sprint/<%= lang.language_id %>" class="btn btn-sm btn-light text-danger fw-bold w-100 stretched-link">Грати</a>
+                        </div>
+                        <div class="position-absolute top-0 end-0 bg-white opacity-10 rounded-circle" style="width: 150px; height: 150px; margin-top: -30px; margin-right: -30px;"></div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card bg-warning text-dark shadow h-100 border-0 overflow-hidden position-relative">
+                        <div class="card-body p-4 position-relative" style="z-index: 2;">
+                            <h4 class="mb-2">📝 Тест</h4>
+                            <p class="small opacity-75 mb-3">5 запитань для перевірки знань.</p>
+                            <a href="/study/user/<%= userId %>/test/<%= lang.language_id %>" class="btn btn-sm btn-dark fw-bold w-100 stretched-link">Пройти</a>
+                        </div>
+                        <div class="position-absolute top-0 end-0 bg-white opacity-10 rounded-circle" style="width: 150px; height: 150px; margin-top: -30px; margin-right: -30px;"></div>
+                    </div>
+                </div>
             </div>
-        <% }) %>
+
+            <div class="row align-items-center mb-4 g-3">
+                <div class="col-md-3">
+                    <h3 class="mb-0 fw-bold text-nowrap">📂 Каталог</h3>
+                </div>
+                <div class="col-md-9">
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Пошук..." style="max-width: 200px;" oninput="updateGrid()">
+                        
+                        <select id="sortSelect" class="form-select" style="max-width: 180px;" onchange="updateGrid()">
+                            <option value="name">За назвою A-Z</option>
+                            <option value="progress">Прогрес (Max)</option>
+                            <option value="count">За кількістю слів</option>
+                            <option value="difficulty_asc">Спочатку легкі</option>
+                            <option value="difficulty_desc">Спочатку важкі</option>
+                        </select>
+
+                        <select id="filterSelect" class="form-select" style="max-width: 180px;" onchange="updateGrid()">
+                            <option value="all">Всі категорії</option>
+                            <option value="completed">Тільки вивчені</option>
+                            <option value="in_progress">В процесі</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4" id="categoriesContainer">
+            </div>
+            
+            <div id="noResults" class="text-center py-5 d-none">
+                <h4 class="text-muted">Нічого не знайдено 😞</h4>
+            </div>
+
+        </div>
+
+        <%- include('partials/sidebar') %>
+
     </div>
 </div>
+
+<script>
+    const categoriesData = <%- JSON.stringify(categories) %>;
+    const userId = "<%= userId %>";
+    const langId = "<%= lang.language_id %>";
+
+    function createCardHTML(cat) {
+        let borderClass = 'border-success'; 
+        let bgBadge = 'bg-success';
+        let icon = '🌱'; 
+
+        if (cat.difficulty_level === 'Medium') { 
+            borderClass = 'border-warning'; 
+            bgBadge = 'bg-warning text-dark'; 
+            icon = '⚡';
+        } else if (cat.difficulty_level === 'Hard') { 
+            borderClass = 'border-danger'; 
+            bgBadge = 'bg-danger'; 
+            icon = '🔥';
+        }
+
+        const link = `/study/user/${userId}/cards/${langId}/cat/${cat.category_id}`;
+
+        let progressHTML = '';
+        let progressColor = 'bg-primary';
+        if (cat.progress === 100) progressColor = 'bg-success';
+
+        // Текст кнопки
+        let btnText = "Вчити картки ➔";
+        let btnClass = "btn-outline-dark";
+        if (cat.progress === 100) {
+            btnText = "Повторити (Вивчено) ↺";
+            btnClass = "btn-success text-white";
+        }
+
+        return `
+            <div class="col-md-4 col-sm-6 animate-fade-in">
+                <div class="card h-100 shadow-sm hover-lift border-top border-4 ${borderClass}">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h4 class="card-title fw-bold mb-0 text-truncate" title="${cat.category_name}">${cat.category_name}</h4>
+                            <span class="badge ${bgBadge} rounded-pill">${cat.difficulty_level}</span>
+                        </div>
+                        
+                        <!-- Статистика слів -->
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>${cat.learned_words || 0} / ${cat.total_words || 0} слів</span>
+                            <span class="fw-bold">${cat.progress}%</span>
+                        </div>
+
+                        <!-- Прогрес бар -->
+                        <div class="progress mb-4" style="height: 8px;">
+                            <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${cat.progress}%"></div>
+                        </div>
+
+                        <a href="${link}" class="btn ${btnClass} w-100 mt-auto rounded-pill fw-bold stretched-link">
+                           ${btnText}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function getDifficultyVal(level) {
+        if (level === 'Easy') return 1;
+        if (level === 'Medium') return 2;
+        if (level === 'Hard') return 3;
+        return 0;
+    }
+
+    function updateGrid() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const sortType = document.getElementById('sortSelect').value;
+        const filterType = document.getElementById('filterSelect').value;
+        const container = document.getElementById('categoriesContainer');
+        const noResults = document.getElementById('noResults');
+
+        let filtered = categoriesData.filter(cat => {
+            const matchesSearch = cat.category_name.toLowerCase().includes(searchTerm);
+            let matchesFilter = true;
+
+            if (filterType === 'completed') matchesFilter = (cat.progress === 100);
+            if (filterType === 'in_progress') matchesFilter = (cat.progress < 100);
+
+            return matchesSearch && matchesFilter;
+        });
+
+        filtered.sort((a, b) => {
+            if (sortType === 'name') return a.category_name.localeCompare(b.category_name);
+            if (sortType === 'count') return b.total_words - a.total_words;
+            if (sortType === 'progress') return b.progress - a.progress;
+            if (sortType === 'difficulty_asc') return getDifficultyVal(a.difficulty_level) - getDifficultyVal(b.difficulty_level);
+            if (sortType === 'difficulty_desc') return getDifficultyVal(b.difficulty_level) - getDifficultyVal(a.difficulty_level);
+        });
+
+        container.innerHTML = filtered.map(cat => createCardHTML(cat)).join('');
+        
+        if (filtered.length === 0) {
+            noResults.classList.remove('d-none');
+        } else {
+            noResults.classList.add('d-none');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', updateGrid);
+</script>
+
+<style>
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
+    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+    
+    .opacity-10 { opacity: 0.1; }
+    .opacity-25 { opacity: 0.25; }
+    .opacity-75 { opacity: 0.75; }
+    
+    .animate-pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+</style>

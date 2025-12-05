@@ -1,37 +1,269 @@
-<!-- ... (HTML частина така ж, як була) ... -->
+<%- include('../partials/nav') %>
+
+<div class="container py-5 text-center">
+    <h2 class="mb-4 fw-bold text-primary"><%= title %></h2>
+
+    <% if (!words || words.length === 0) { %>
+        <div class="card shadow-sm p-5 mt-5 mx-auto" style="max-width: 600px;">
+            <div class="card-body">
+                <h1 class="display-1 mb-3">🎉</h1>
+                <h3 class="card-title">Чудово!</h3>
+                <p class="card-text text-muted fs-5">
+                    <% if (typeof mode !== 'undefined' && mode === 'repetition') { %>
+                        На сьогодні немає слів для повторення (словник порожній). Додайте нові слова через категорії!
+                    <% } else { %>
+                        У цій категорії поки немає слів або ви їх вже пройшли.
+                    <% } %>
+                </p>
+                <a href="/user/<%= userId %>/dashboard" class="btn btn-primary btn-lg mt-3 rounded-pill px-4">Повернутися в меню</a>
+            </div>
+        </div>
+    
+    <% } else { %>
+
+        <div class="d-flex justify-content-between align-items-center mb-4 mx-auto" style="max-width: 400px;">
+            <span class="text-muted fw-bold">Картка <span id="current-index" class="text-dark">1</span> з <span id="total-words"><%= words.length %></span></span>
+            <span class="badge bg-warning text-dark fs-6 opacity-0 transition-opacity" id="points-badge">+0 XP</span>
+        </div>
+        
+        <div class="d-flex justify-content-center mb-5 perspective-container">
+            <div id="card-area" class="flip-card w-100" style="max-width: 400px; height: 400px;" onclick="flipCard()">
+                <div class="flip-card-inner shadow rounded-4" id="card-inner">
+                    
+                    <div class="flip-card-front bg-white d-flex flex-column justify-content-center align-items-center p-4 border position-relative">
+                        <span id="learned-badge" class="badge bg-success position-absolute top-0 end-0 m-3 fs-6 d-none shadow-sm">
+                            <i class="bi bi-check-circle-fill"></i> Вивчено
+                        </span>
+
+                        <img id="word-image" src="" class="mb-3 rounded d-none shadow-sm" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+                        <h1 class="display-5 fw-bold mb-3 text-break" id="word-original">Loading...</h1>
+                        
+                        <div class="w-75 mt-auto">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Рівень знання</span>
+                                <span id="word-level-text">0/5</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div id="word-level-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <p class="text-muted small mt-3 mb-0 user-select-none">
+                            <i class="bi bi-arrow-repeat"></i> Натисни, щоб перевернути
+                        </p>
+                    </div>
+
+                    <div class="flip-card-back bg-light d-flex flex-column justify-content-center align-items-center p-4 border border-primary">
+                        <h2 class="text-success fw-bold display-6 mb-3 text-break" id="word-translation"></h2>
+                        <hr class="w-50 mx-auto border-secondary mb-3">
+                        <p class="text-muted fst-italic user-select-none">Чи знали ви це слово?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls-area" class="d-flex justify-content-center gap-3">
+            <button id="btn-no" class="btn btn-outline-danger btn-lg px-5 py-3 rounded-pill shadow-sm hover-scale" onclick="processResult('no')">
+                ❌ Не знаю
+            </button>
+            <button id="btn-yes" class="btn btn-success btn-lg px-5 py-3 rounded-pill shadow-sm hover-scale" onclick="processResult('yes')">
+                ✅ Знаю
+            </button>
+        </div>
+
+        <div id="results-modal" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center results-backdrop">
+            <div class="card border-0 shadow-lg p-4 text-center animate-zoom-in" style="max-width: 450px; width: 90%; border-radius: 20px; background: rgba(255, 255, 255, 0.98);">
+                <div class="card-body">
+                    <div class="mb-3 position-relative d-inline-block">
+                        <span class="display-1">🎯</span>
+                    </div>
+                    
+                    <h2 class="fw-bold mb-2">Сесію завершено!</h2>
+                    <p class="text-muted mb-4">Чудова робота! Ось ваш результат:</p>
+                    
+                    <div class="row g-2 mb-4 justify-content-center">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-4 border">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Пройдено</div>
+                                <div class="h3 fw-bold text-dark mb-0">
+                                    <span id="result-words">0</span> <span class="fs-6 text-muted">слів</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-4 border">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Зароблено</div>
+                                <div class="h3 fw-bold text-warning mb-0">
+                                    +<span id="result-xp">0</span> <span class="fs-6 text-dark">XP</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="/user/<%= userId %>/dashboard" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm hover-scale transition-all">
+                        Повернутися в меню
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <script>
             const words = <%- JSON.stringify(words) %>;
+            const userId = "<%= userId %>"; 
+            const langId = "<%= typeof langId != 'undefined' ? langId : 1 %>";
+            // режим
+            const mode = "<%= typeof mode != 'undefined' ? mode : 'category' %>";
+            const SESSION_LIMIT = 10; 
+
             let currentIndex = 0;
-            // ... (renderCard functions) ...
+            let isProcessing = false;
+            let sessionXP = 0; 
+
+            const totalWords = Math.min(words.length, SESSION_LIMIT);
+            document.getElementById('total-words').innerText = totalWords;
+
+            function renderCard() {
+                if (currentIndex >= words.length || currentIndex >= SESSION_LIMIT) {
+                    showResultsModal();
+                    return;
+                }
+
+                const word = words[currentIndex];
+                const cardArea = document.getElementById('card-area');
+                
+                cardArea.classList.remove('flipped');
+                isProcessing = false;
+                toggleButtons(true);
+                
+                setTimeout(() => {
+                    document.getElementById('word-original').innerText = word.original;
+                    document.getElementById('word-translation').innerText = word.translation;
+                    document.getElementById('current-index').innerText = currentIndex + 1;
+
+                    const learnedBadge = document.getElementById('learned-badge');
+                    if (word.status === 'learned') {
+                        learnedBadge.classList.remove('d-none');
+                    } else {
+                        learnedBadge.classList.add('d-none');
+                    }
+
+                    const level = word.level || 0;
+                    const percentage = Math.min(level * 20, 100);
+                    document.getElementById('word-level-bar').style.width = percentage + '%';
+                    document.getElementById('word-level-text').innerText = level + '/5';
+
+                    const img = document.getElementById('word-image');
+                    if (word.image_url && word.image_url !== 'null' && word.image_url.trim() !== '') {
+                        img.src = word.image_url;
+                        img.classList.remove('d-none');
+                    } else {
+                        img.classList.add('d-none');
+                    }
+                }, 200);
+            }
+
+            function showResultsModal() {
+                document.getElementById('result-words').innerText = currentIndex;
+                document.getElementById('result-xp').innerText = sessionXP;
+                
+                const modal = document.getElementById('results-modal');
+                modal.classList.remove('d-none');
+            }
+
+            function flipCard() {
+                document.getElementById('card-area').classList.toggle('flipped');
+            }
+
+            function toggleButtons(enable) {
+                document.getElementById('btn-yes').disabled = !enable;
+                document.getElementById('btn-no').disabled = !enable;
+            }
 
             function processResult(status) {
+                if (isProcessing) return;
+                isProcessing = true;
+                toggleButtons(false);
+
                 const word = words[currentIndex];
                 const cardArea = document.getElementById('card-area');
 
-                if (!cardArea.classList.contains('flipped')) flipCard();
+                if (!cardArea.classList.contains('flipped')) { flipCard(); }
 
                 fetch('/study/process', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        userId: '<%= userId %>',  // <--- ВАЖЛИВО: ID передається тут
+                        userId: userId,
                         record_id: word.record_id,
                         word_id: word.word_id,
-                        is_correct: status
+                        is_correct: status,
+                        langId: langId,
+                        mode: mode
                     })
                 })
                 .then(res => res.json())
                 .then(data => {
                     const badge = document.getElementById('points-badge');
-                    badge.innerText = `+${data.points_earned} XP`;
-                    badge.style.opacity = '1';
-                    setTimeout(() => badge.style.opacity = '0', 1000);
+                    
+                    if (data.points_earned > 0) {
+                        sessionXP += data.points_earned;
+                        badge.innerText = `+${data.points_earned} XP`;
+                        badge.classList.replace('bg-secondary', 'bg-warning');
+                        badge.classList.replace('text-white', 'text-dark');
+                    } else {
+                        badge.innerText = `0 XP`;
+                        badge.classList.replace('bg-warning', 'bg-secondary');
+                        badge.classList.replace('text-dark', 'text-white');
+                    }
+                    badge.classList.remove('opacity-0');
+                    
+                    setTimeout(() => badge.classList.add('opacity-0'), 1500);
+
+                    if (data.newAchievements && data.newAchievements.length > 0) {
+                        if (typeof showAchievement === "function") showAchievement(data.newAchievements);
+                    }
+
                     currentIndex++;
-                    setTimeout(renderCard, 600);
+                    setTimeout(renderCard, 1000);
                 })
-                .catch(err => console.error(err));
+                .catch(err => {
+                    console.error(err);
+                    isProcessing = false;
+                    toggleButtons(true);
+                });
             }
+
             renderCard();
         </script>
-<!-- ... -->
+
+        <style>
+            .perspective-container { perspective: 1000px; }
+            .flip-card { cursor: pointer; user-select: none; -webkit-user-select: none; }
+            .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+            .flipped .flip-card-inner { transform: rotateY(180deg); }
+            
+            .flip-card-front, .flip-card-back {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                -webkit-backface-visibility: hidden; backface-visibility: hidden;
+                border-radius: 1rem;
+            }
+            .flip-card-back { transform: rotateY(180deg); }
+            
+            .transition-opacity { transition: opacity 0.3s ease-in-out; }
+            .hover-scale:hover { transform: scale(1.05); transition: transform 0.2s; }
+            
+            .results-backdrop {
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                z-index: 10000;
+                animation: fadeInBackdrop 0.3s ease-out;
+            }
+            .animate-zoom-in { animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+            @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            @keyframes fadeInBackdrop { from { opacity: 0; } to { opacity: 1; } }
+        </style>
+    <% } %>
+</div>
+
+<%- include('../partials/achievement') %>

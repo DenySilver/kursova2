@@ -1,17 +1,77 @@
 <%- include('partials/nav') %>
+
 <div class="container py-5">
-    <h1>Редагування профілю</h1>
-    <form action="/profile/edit" method="POST" class="mt-4" style="max-width: 500px;">
-        <div class="mb-3">
-            <label>Ім'я користувача</label>
-            <input type="text" name="username" class="form-control" value="<%= user.username %>" required>
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow border-0" style="border-radius: 20px;">
+                <div class="card-body p-5">
+                    <h2 class="mb-4 text-center fw-bold">Редагування профілю</h2>
+                    
+                    <form action="/user/<%= userId %>/edit" method="POST">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Ім'я користувача</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
+                                <input type="text" name="username" class="form-control border-start-0" value="<%= user.username %>" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Електронна пошта</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope"></i></span>
+                                <input type="email" name="email" class="form-control border-start-0" value="<%= user.email %>" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Новий пароль</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
+                                <input type="password" name="password" class="form-control border-start-0" placeholder="Залиште пустим, щоб не змінювати">
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">URL Аватара</label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-image"></i></span>
+                                <input type="url" name="avatar_url" class="form-control border-start-0" value="<%= user.avatar_url %>" id="avatarInput">
+                            </div>
+                            
+                            <!-- Прев'ю -->
+                            <div class="d-flex align-items-center bg-light p-3 rounded-3 border">
+                                <img src="<%= user.avatar_url %>" id="avatarPreview" class="rounded-circle me-3 border bg-white" width="60" height="60" style="object-fit: cover;">
+                                <div class="small text-muted">
+                                    Так буде виглядати ваша нова аватарка.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm" type="submit">Зберегти зміни</button>
+                            <a href="/user/<%= userId %>" class="btn btn-link text-muted text-decoration-none">Скасувати</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label>URL Аватара</label>
-            <input type="url" name="avatar_url" class="form-control" value="<%= user.avatar_url %>">
-            <div class="form-text">Вставте пряме посилання на зображення</div>
-        </div>
-        <button class="btn btn-success">Зберегти зміни</button>
-        <a href="/profile" class="btn btn-secondary">Скасувати</a>
-    </form>
+    </div>
 </div>
+
+<script>
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+    
+    avatarInput.addEventListener('input', () => {
+        if(avatarInput.value) {
+            avatarPreview.src = avatarInput.value;
+            avatarPreview.onerror = function() {
+                this.src = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+            };
+        }
+    });
+</script>

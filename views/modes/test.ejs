@@ -1,48 +1,236 @@
 <%- include('../partials/nav') %>
-<div class="container py-5 text-center" style="max-width: 600px;">
-    <h1>Тест</h1>
+
+<div class="container py-5" style="max-width: 800px;">
+
+    <div class="text-center mb-5">
+        <h2 class="fw-bold display-5 mb-3 text-primary">📝 Тестування</h2>
+        <p class="text-muted fs-5">Дай відповідь на 5 запитань, щоб отримати бали!</p>
+    </div>
+
     <form id="testForm">
         <% questions.forEach((q, i) => { %>
-            <div class="card mb-4 text-start p-3">
-                <h5><%= i+1 %>. Як перекласти "<%= q.original %>"?</h5>
-                <% q.options.forEach(opt => { %>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="q<%= q.word_id %>" value="<%= opt %>" id="opt_<%= i %>_<%= opt %>">
-                        <label class="form-check-label" for="opt_<%= i %>_<%= opt %>"><%= opt %></label>
+            <div class="card shadow-sm mb-4 border-0 animate-fade-in hover-lift" style="animation-delay: <%= i * 0.1 %>s">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-3 d-flex align-items-center">
+                        <span class="badge bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;"><%= i+1 %></span>
+                        <span>Як перекласти "<span class="text-primary text-decoration-underline"><%= q.original %></span>"?</span>
+                    </h5>
+                    
+                    <div class="row g-3 mt-2">
+                        <% q.options.forEach(opt => { %>
+                            <div class="col-md-6">
+                                <input type="radio" class="btn-check" name="q<%= q.word_id %>" value="<%= opt %>" id="opt_<%= q.word_id %>_<%= opt %>" autocomplete="off">
+                                <label class="btn btn-outline-secondary w-100 text-start p-3 rounded-3 fw-semibold d-flex align-items-center justify-content-between option-label transition-all" for="opt_<%= q.word_id %>_<%= opt %>">
+                                    <span><%= opt %></span>
+                                    <i class="bi bi-check-circle-fill opacity-0 check-icon"></i>
+                                </label>
+                            </div>
+                        <% }) %>
                     </div>
-                <% }) %>
-                <input type="hidden" class="correct-answer" value="<%= q.translation %>" data-q="q<%= q.word_id %>">
+                    
+                    <input type="hidden" class="correct-answer" value="<%= q.translation %>" data-q="q<%= q.word_id %>">
+                </div>
             </div>
         <% }) %>
-        <button type="button" onclick="checkTest()" class="btn btn-primary w-100">Завершити тест</button>
+
+        <div class="d-grid gap-2 mt-5 mb-5">
+            <button type="button" onclick="checkTest()" class="btn btn-success btn-lg shadow rounded-pill py-3 fw-bold hover-scale transition-all">
+                ✅ Завершити тест
+            </button>
+            <a href="/user/<%= userId %>/dashboard" class="btn btn-link text-muted text-decoration-none mt-2">Скасувати та вийти</a>
+        </div>
     </form>
 </div>
 
+<div id="results-modal" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center results-backdrop">
+    <div class="card border-0 shadow-lg p-4 text-center animate-zoom-in" style="max-width: 450px; width: 90%; border-radius: 20px; background: rgba(255, 255, 255, 0.98);">
+        <div class="card-body">
+            <div class="mb-3 position-relative d-inline-block">
+                <span class="display-1">🎯</span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" id="modal-score-badge" style="font-size: 1rem;">
+                    100%
+                </span>
+            </div>
+            
+            <h2 class="fw-bold mb-2">Тест завершено!</h2>
+            <p class="text-muted mb-4" id="modal-message">Чудовий результат!</p>
+            
+            <!-- Статистика -->
+            <div class="row g-2 mb-4 justify-content-center">
+                <div class="col-6">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Правильно</div>
+                        <div class="h3 fw-bold text-success mb-0">
+                            <span id="result-score">0</span><span class="text-muted fs-6"> / <span id="result-total">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Зароблено</div>
+                        <div class="h3 fw-bold text-warning mb-0">
+                            +<span id="result-xp">0</span> <span class="fs-6 text-dark">XP</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <a href="/user/<%= userId %>/dashboard" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm hover-scale transition-all">
+                Повернутися в меню
+            </a>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/achievement') %>
+
 <script>
+    const userId = "<%= userId %>";
+    const langId = "<%= typeof langId != 'undefined' ? langId : 1 %>";
+
     function checkTest() {
         let score = 0;
         const answers = document.querySelectorAll('.correct-answer');
+        let allAnswered = true;
         
         answers.forEach(ans => {
             const correct = ans.value;
             const name = ans.dataset.q;
             const selected = document.querySelector(`input[name="${name}"]:checked`);
             
-            if (selected && selected.value === correct) {
-                score++;
-                selected.parentElement.classList.add('text-success', 'fw-bold');
-            } else if (selected) {
-                selected.parentElement.classList.add('text-danger');
+            const allLabels = document.querySelectorAll(`input[name="${name}"] + label`);
+            
+            allLabels.forEach(l => {
+                l.classList.remove('btn-success', 'btn-outline-danger', 'btn-outline-secondary', 'text-white', 'border-danger');
+                l.classList.add('btn-outline-secondary');
+                l.querySelector('.check-icon').classList.add('opacity-0');
+            });
+
+            if (selected) {
+                const selectedLabel = document.querySelector(`label[for="${selected.id}"]`);
+                
+                if (selected.value === correct) {
+                    score++;
+                    selectedLabel.classList.remove('btn-outline-secondary');
+                    selectedLabel.classList.add('btn-success', 'text-white');
+                    selectedLabel.querySelector('.check-icon').classList.remove('opacity-0');
+                } else {
+                    selectedLabel.classList.remove('btn-outline-secondary');
+                    selectedLabel.classList.add('btn-outline-danger', 'text-danger', 'border-danger', 'fw-bold');
+                    
+                    const correctInput = document.querySelector(`input[name="${name}"][value="${correct}"]`);
+                    if (correctInput) {
+                        const correctLabel = document.querySelector(`label[for="${correctInput.id}"]`);
+                        correctLabel.classList.remove('btn-outline-secondary');
+                        correctLabel.classList.add('btn-outline-success', 'text-success', 'fw-bold');
+                    }
+                }
+            } else {
+                allAnswered = false;
+                ans.parentElement.parentElement.classList.add('border-danger', 'bg-light');
             }
         });
 
-        alert(`Ваш результат: ${score} з ${answers.length}`);
+        if (!allAnswered) {
+            const firstMissed = document.querySelector('.border-danger');
+            if(firstMissed) firstMissed.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            alert("Будь ласка, дайте відповідь на всі запитання! Пропущені питання підсвічені червоним.");
+            return;
+        }
+        const submitBtn = document.querySelector('button[onclick="checkTest()"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Перевірка...';
 
-        // Відправка на сервер
-        fetch('/study/test/submit', {
+        fetch(`/study/user/${userId}/test/submit`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ score: score, total: answers.length })
-        }).then(() => window.location.href = '/dashboard');
+            body: JSON.stringify({ 
+                score: score, 
+                total: answers.length,
+                langId: langId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.newAchievements && data.newAchievements.length > 0) {
+                if (typeof showAchievement === "function") {
+                    showAchievement(data.newAchievements);
+                }
+            } 
+            
+            setTimeout(() => {
+                showResultsModal(score, answers.length, data.points);
+            }, 1500);
+        })
+        .catch(err => {
+            console.error("Error:", err);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '❌ Помилка. Спробуйте ще раз';
+        });
+    }
+
+    function showResultsModal(score, total, xp) {
+        document.getElementById('result-score').innerText = score;
+        document.getElementById('result-total').innerText = total;
+        document.getElementById('result-xp').innerText = xp;
+        const percentage = Math.round((score / total) * 100);
+        const badge = document.getElementById('modal-score-badge');
+        const message = document.getElementById('modal-message');
+
+        badge.innerText = percentage + '%';
+        
+        if (percentage === 100) {
+            badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success border border-light';
+            message.innerText = "Ідеально!";
+        } else if (percentage >= 70) {
+            badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-light';
+            message.innerText = "Чудова робота!";
+        } else {
+            badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-light';
+            message.innerText = "Непогано, але можна краще!";
+        }
+
+        document.getElementById('results-modal').classList.remove('d-none');
     }
 </script>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+        opacity: 0;
+    }
+
+    .btn-check:checked + .btn-outline-secondary {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    .option-label:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    .btn-check:checked + .option-label:hover {
+        background-color: #0b5ed7;
+        transform: none;
+    }
+    .transition-all { transition: all 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+    .hover-scale:hover { transform: scale(1.05); }
+
+    .results-backdrop {
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 10000;
+        animation: fadeInBackdrop 0.3s ease-out;
+    }
+    .animate-zoom-in { animation: zoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    
+    @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes fadeInBackdrop { from { opacity: 0; } to { opacity: 1; } }
+</style>

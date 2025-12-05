@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Адмін-панель</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <style>
+        body { overflow: hidden; height: 100vh; font-size: 0.9rem; background-color: #f8f9fa; }
+        
+        .sidebar { height: 100vh; overflow-y: auto; background: #212529; color: white; border-right: 1px solid #333; }
+        .nav-link { color: rgba(255,255,255,0.75); cursor: pointer; padding: 10px 15px; border-radius: 6px; margin-bottom: 4px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: white; background: rgba(255,255,255,0.15); font-weight: 600; }
+        .nav-link i { width: 20px; display: inline-block; text-align: center; }
+        
+        .content { height: 100vh; overflow-y: auto; padding: 30px; }
+        
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eaeaea; }
+        .table thead { background-color: #f8f9fa; }
+        .table th { font-weight: 600; color: #495057; border-bottom-width: 2px; }
+        
+        .editable { cursor: pointer; border-bottom: 1px dashed #ced4da; transition: background 0.2s; }
+        .editable:hover { background-color: #f8f9fa; }
+        .editable:focus { outline: none; background: #e7f1ff; color: #000; border-bottom: 2px solid #0d6efd; }
+        .row-modified { background-color: #fff3cd !important; transition: background 0.3s; }
+        
+        .user-card-item {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #eaeaea;
+            background: white;
+        }
+        .user-card-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #0d6efd;
+            background-color: #f8f9fa;
+        }
+        
+        .fk-row:hover { background-color: #e9ecef; cursor: pointer; }
+        .modal-content { border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<div class="d-flex">
+    <div class="sidebar col-md-2 p-3 d-flex flex-column">
+        <div class="mb-4 px-2 py-2">
+            <h5 class="text-white fw-bold mb-0"><i class="text-warning"></i>Admin</h5>
+            <small class="text-white-50" style="font-size: 0.75rem;">Управління базою даних</small>
+        </div>
+        
+        <ul class="nav flex-column flex-grow-1">
+            <% tables.forEach(t => { %>
+                <li class="nav-item">
+                    <a class="nav-link" id="link-<%= t %>" onclick="initTable('<%= t %>')">
+                        <i class="bi bi-database me-2"></i> <%= t %>
+                    </a>
+                </li>
+            <% }) %>
+        </ul>
+        
+        <div class="mt-auto pt-3 border-top border-secondary">
+            <a class="nav-link text-danger" href="/">
+                <i class="bi bi-box-arrow-left me-2"></i> Повернутися на сайт
+            </a>
+        </div>
+    </div>
+
+    <div class="content col-md-10">
+        
+        <div id="user-selector" class="d-none mb-4">
+            <h3 class="mb-3 fw-bold text-primary"><i class="bi bi-person-lines-fill me-2"></i>Оберіть користувача</h3>
+            <p class="text-muted mb-4">Для роботи з таблицею <strong><span id="current-table-name"></span></strong>, спочатку оберіть користувача.</p>
+        
+            <div class="mb-4">
+                <input type="text" id="userSearch" class="form-control form-control-lg" placeholder="🔍 Пошук користувача..." oninput="filterUserCards()">
+            </div>
+
+            <div class="row g-3" id="user-cards-container">
+            </div>
+        </div>
+
+        <div id="table-wrapper" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <button id="back-to-users-btn" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-none" onclick="showUserSelector()">
+                        <i class="bi bi-arrow-left me-1"></i> Змінити користувача
+                    </button>
+                    
+                    <h3 class="fw-bold mb-0" id="table-title">TableName</h3>
+                    
+                    <button id="stats-btn" class="btn btn-info btn-sm text-white fw-bold rounded-pill px-3 d-none" onclick="showStats()">
+                        <i class="bi bi-bar-chart-line-fill me-1"></i> Статистика
+                    </button>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Пошук записів..." oninput="filterTable()">
+                    </div>
+                    <button class="btn btn-white shadow-sm border" onclick="refreshTable()" title="Оновити"><i class="bi bi-arrow-clockwise"></i></button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table table-hover mb-0 align-middle text-nowrap">
+                    <thead class="bg-light small text-uppercase text-muted">
+                        <tr id="table-header"></tr>
+                        <tr id="add-row" class="table-active border-bottom border-2"></tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="welcome-screen" class="d-flex flex-column align-items-center justify-content-center h-75 text-muted">
+            <i class="bi bi-table display-1 mb-3 opacity-25"></i>
+            <h3>Оберіть таблицю в меню зліва</h3>
+            <p>Для початку роботи з базою даних</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="fkModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Виберіть запис (<span id="fk-table-name" class="text-primary"></span>)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="input-group mb-3 shadow-sm rounded-3 overflow-hidden">
+                    <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                    <input type="text" id="fkSearch" class="form-control border-0" placeholder="Швидкий пошук..." oninput="filterFKTable()">
+                </div>
+                <div class="table-responsive rounded border">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead id="fk-header" class="table-light"></thead>
+                        <tbody id="fk-body"></tbody>
+                    </table>
+                </div>
+                <div id="fk-empty" class="text-center py-4 text-muted d-none">
+                    Немає доступних записів для вибору (або всі вже додані).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="statsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-graph-up me-2 text-info"></i>Статистика</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="stats-body">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTable = '';
+    let currentPK = '';
+    let currentFilter = {}; 
+    let tableData = [];
+    let tableColumns = [];
+    let usersList = []; 
+
+    const colConfig = {
+        'event_type': { type: 'select', options: ['review', 'test', 'sprint'] },
+        'difficulty_level': { type: 'select', options: ['Easy', 'Medium', 'Hard'] },
+        'status': { type: 'select', options: ['learning', 'learned'] },
+        'is_admin': { type: 'select', options: ['0', '1'] },
+        'condition_type': { type: 'select', options: ['words', 'tests', 'xp'] },
+        'icon': { type: 'select', options: ['🥚', '🎓', '🧠', '💎', '🔥', '📚', '📝', '⭐', '👑'] },
+    };
+
+    const userDependentTables = ['User_Dictionary', 'User_Point', 'User_Achievement'];
+
+    const hiddenColumns = {};
+
+    const fkRelations = {
+        'user_id': 'User',
+        'language_id': 'Language',
+        'league_id': 'League',
+        'category_id': 'Category',
+        'word_id': 'Word',
+        'achievement_id': 'Achievement'
+    };
+
+    const dateColumns = ['registration_date', 'date_earned', 'date_taken', 'last_reviewed_date'];
+
+    async function initTable(tableName) {
+        currentTable = tableName;
+        currentFilter = {}; 
+        
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(`link-${tableName}`).classList.add('active');
+        document.getElementById('welcome-screen').classList.add('d-none');
+
+        if (userDependentTables.includes(tableName)) {
+            showUserSelector();
+        } else {
+            document.getElementById('user-selector').classList.add('d-none');
+            document.getElementById('back-to-users-btn').classList.add('d-none'); 
+            document.getElementById('stats-btn').classList.add('d-none');
+            loadTableData();
+        }
+    }
+
+    async function showUserSelector() {
+        document.getElementById('table-wrapper').classList.add('d-none');
+        document.getElementById('user-selector').classList.remove('d-none');
+        document.getElementById('current-table-name').innerText = currentTable;
+        
+        await loadUsersForCards();
+    }
+
+    async function loadUsersForCards() {
+        if (usersList.length === 0) {
+            try {
+                const res = await fetch('/admin/api/User');
+                const json = await res.json();
+                usersList = json.data;
+            } catch (e) { alert("Не вдалося завантажити користувачів"); return; }
+        }
+        renderUserCards(usersList);
+    }
+
+    function renderUserCards(users) {
+        const container = document.getElementById('user-cards-container');
+        container.innerHTML = users.map(u => `
+            <div class="col-md-4 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm user-card-item" onclick="selectUserAndLoadTable(${u.user_id})">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            ${u.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="overflow-hidden">
+                            <h6 class="card-title mb-0 text-truncate fw-bold">${u.username}</h6>
+                            <small class="text-muted text-truncate d-block">${u.email}</small>
+                            <small class="text-muted" style="font-size: 0.7rem;">ID: ${u.user_id}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function filterUserCards() {
+        const term = document.getElementById('userSearch').value.toLowerCase();
+        const filtered = usersList.filter(u => 
+            u.username.toLowerCase().includes(term) || 
+            u.email.toLowerCase().includes(term) ||
+            String(u.user_id).includes(term)
+        );
+        renderUserCards(filtered);
+    }
+
+    function selectUserAndLoadTable(userId) {
+        currentFilter = { user_id: userId };
+        document.getElementById('user-selector').classList.add('d-none');
+        document.getElementById('back-to-users-btn').classList.remove('d-none');
+        document.getElementById('stats-btn').classList.remove('d-none');
+        loadTableData();
+    }
+
+    async function loadTableData() {
+        document.getElementById('table-wrapper').classList.remove('d-none');
+        
+        let title = currentTable;
+        if (currentFilter.user_id) {
+            const user = usersList.find(u => u.user_id == currentFilter.user_id);
+            if(user) title += ` : ${user.username}`;
+        }
+        document.getElementById('table-title').innerText = title;
+
+        const params = new URLSearchParams(currentFilter).toString();
+        const url = `/admin/api/${currentTable}?${params}`;
+
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            tableData = json.data;
+            tableColumns = json.columns;
+            currentPK = json.pk;
+            renderTable();
+        } catch (e) { alert("Помилка: " + e); }
+    }
+
+    function refreshTable() {
+        loadTableData();
+    }
+    function showStats() {
+        const modalBody = document.getElementById('stats-body');
+        let html = '';
+        let now = new Date();
+        let oneWeekAgo = new Date();
+        oneWeekAgo.setDate(now.getDate() - 7);
+
+        if (currentTable === 'User_Point') {
+            const totalXP = tableData.reduce((sum, r) => sum + (r.points_amount || 0), 0);
+            const lastWeekXP = tableData.filter(r => new Date(r.date_earned) > oneWeekAgo).reduce((sum, r) => sum + r.points_amount, 0);
+            
+            const types = {};
+            tableData.forEach(r => {
+                types[r.event_type] = (types[r.event_type] || 0) + r.points_amount;
+            });
+            let typesHtml = Object.entries(types).map(([type, amount]) => 
+                `<li class="list-group-item d-flex justify-content-between small"><span>${type}:</span> <strong>${amount} XP</strong></li>`
+            ).join('');
+
+            html = `
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item d-flex justify-content-between bg-light"><span>Всього XP:</span> <strong class="text-primary">${totalXP}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>За останній тиждень:</span> <strong>${lastWeekXP} XP</strong></li>
+                </ul>
+                <h6>Розподіл по типах:</h6>
+                <ul class="list-group list-group-flush">${typesHtml}</ul>`;
+        } 
+        else if (currentTable === 'User_Dictionary') {
+            const totalWords = tableData.length;
+            const learned = tableData.filter(r => r.status === 'learned').length;
+            const learning = tableData.filter(r => r.status === 'learning').length;
+            
+            const avgLevel = totalWords > 0 ? (tableData.reduce((s, r) => s + r.repetition_level, 0) / totalWords).toFixed(1) : 0;
+
+            html = `
+                <div class="text-center mb-4">
+                    <h2 class="text-success fw-bold display-4">${learned}</h2>
+                    <span class="text-muted">Слів вивчено повністю</span>
+                </div>
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar bg-success" style="width: ${(learned/totalWords)*100}%">${learned}</div>
+                    <div class="progress-bar bg-primary" style="width: ${(learning/totalWords)*100}%">${learning}</div>
+                </div>
+                <div class="d-flex justify-content-between text-small text-muted mb-3">
+                    <span><i class="bi bi-circle-fill text-success small me-1"></i>Вивчено</span>
+                    <span><i class="bi bi-circle-fill text-primary small me-1"></i>В процесі</span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between"><span>Всього слів:</span> <strong>${totalWords}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Середній рівень знань:</span> <strong class="text-info">${avgLevel} / 5</strong></li>
+                </ul>`;
+        }
+        else if (currentTable === 'Test') {
+            const count = tableData.length;
+            const avgScore = count > 0 ? (tableData.reduce((s, r) => s + r.score, 0) / count).toFixed(1) : 0;
+            const maxScore = count > 0 ? Math.max(...tableData.map(r => r.score)) : 0;
+            
+            html = `
+                <div class="text-center mb-4">
+                    <h2 class="text-primary fw-bold display-4">${count}</h2>
+                    <span class="text-muted">Тестів пройдено</span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between"><span>Середній бал:</span> <strong class="text-info">${avgScore} / 5</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Найкращий результат:</span> <strong class="text-success">${maxScore}</strong></li>
+                </ul>`;
+        }
+        else if (currentTable === 'User_Achievement') {
+            html = `
+                <div class="text-center py-4">
+                    <h1 class="display-1">🏆</h1>
+                    <h3 class="fw-bold">Отримано: ${tableData.length}</h3>
+                    <p class="text-muted">досягнень</p>
+                </div>`;
+        }
+        else {
+            html = `<p class="text-center text-muted py-3">Статистика недоступна для цієї таблиці.</p>`;
+        }
+
+        modalBody.innerHTML = html;
+        new bootstrap.Modal(document.getElementById('statsModal')).show();
+    }
+
+    function renderTable() {
+        const thead = document.getElementById('table-header');
+        const addRow = document.getElementById('add-row');
+        const tbody = document.getElementById('table-body');
+        
+        thead.innerHTML = ''; addRow.innerHTML = ''; tbody.innerHTML = '';
+
+        const visibleColumns = tableColumns.filter(col => {
+            if (hiddenColumns[currentTable] && hiddenColumns[currentTable].includes(col)) return false;
+            return true;
+        });
+
+        visibleColumns.forEach(col => {
+            const th = document.createElement('th');
+            th.innerHTML = `${col} <i class="bi bi-arrow-down-up small opacity-50"></i>`;
+            th.style.cursor = 'pointer';
+            th.onclick = () => sortTable(col);
+            thead.appendChild(th);
+
+            const tdAdd = document.createElement('td');
+            if (col === currentPK) {
+                tdAdd.innerHTML = '<span class="badge bg-secondary text-white-50">Auto</span>';
+            } else if (currentFilter[col]) {
+                tdAdd.innerHTML = `<input type="text" class="form-control form-control-sm add-field bg-light" data-col="${col}" value="${currentFilter[col]}" readonly>`;
+            } else {
+                tdAdd.innerHTML = createInputHTML(col, 'add');
+            }
+            addRow.appendChild(tdAdd);
+        });
+
+        const thAction = document.createElement('th'); 
+        thAction.innerText = 'Дії'; 
+        thAction.style.width = "100px";
+        thead.appendChild(thAction);
+
+        const tdAddAction = document.createElement('td'); 
+        tdAddAction.innerHTML = `<button class="btn btn-success btn-sm w-100 fw-bold shadow-sm" onclick="saveNewRecord()"><i class="bi bi-plus-lg"></i></button>`;
+        addRow.appendChild(tdAddAction);
+
+        tableData.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.id = `row-${row[currentPK]}`;
+
+            visibleColumns.forEach(col => {
+                const td = document.createElement('td');
+                let val = row[col];
+
+                if (dateColumns.includes(col) && val) {
+                    val = new Date(val).toISOString().slice(0, 16); 
+                }
+                
+                if (col === currentPK) {
+                    td.innerText = val;
+                    td.className = 'fw-bold text-muted small ps-3';
+                } else {
+                    if (colConfig[col]) {
+                        const options = colConfig[col].options.map(o => `<option value="${o}" ${o==val?'selected':''}>${o}</option>`).join('');
+                        td.innerHTML = `<select class="form-select form-select-sm border-0 bg-transparent" onchange="markModified(${row[currentPK]}, '${col}', this.value)">${options}</select>`;
+                    } else if (fkRelations[col]) {
+                        td.innerHTML = `
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control border-0 bg-transparent editable-fk text-primary fw-semibold" 
+                                       value="${val}" readonly onclick="openFKModal('${col}', ${row[currentPK]})" style="cursor:pointer;">
+                                <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-caret-down-fill small"></i></span>
+                            </div>`;
+                    } else if (dateColumns.includes(col)) {
+                        td.innerHTML = `<input type="date" class="form-control form-control-sm border-0 bg-transparent" value="${val ? val.slice(0,10) : ''}" onchange="markModified(${row[currentPK]}, '${col}', this.value)">`;
+                    } else {
+                        td.innerText = val;
+                        td.contentEditable = true;
+                        td.className = 'editable px-2';
+                        td.oninput = () => markModified(row[currentPK], col, td.innerText);
+                    }
+                }
+                tr.appendChild(td);
+            });
+
+            const tdAction = document.createElement('td');
+            tdAction.innerHTML = `
+                <div class="btn-group btn-group-sm w-100 shadow-sm">
+                    <button class="btn btn-primary d-none save-btn" onclick="updateRow(${row[currentPK]})"><i class="bi bi-check-lg"></i></button>
+                    <button class="btn btn-outline-danger border-0 bg-white" onclick="deleteRecord(${row[currentPK]})"><i class="bi bi-trash"></i></button>
+                </div>
+            `;
+            tr.appendChild(tdAction);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function createInputHTML(col, mode) {
+        if (colConfig[col]) {
+            const options = colConfig[col].options.map(o => `<option value="${o}">${o}</option>`).join('');
+            return `<select class="form-select form-select-sm add-field" data-col="${col}">${options}</select>`;
+        }
+        if (fkRelations[col]) {
+            return `<div class="input-group input-group-sm">
+                <input type="text" class="form-control add-field bg-white" data-col="${col}" placeholder="Оберіть..." id="add-fk-${col}" readonly style="cursor:pointer;" onclick="openFKModalForAdd('${col}')">
+                <button class="btn btn-outline-secondary" type="button" onclick="openFKModalForAdd('${col}')"><i class="bi bi-list"></i></button>
+            </div>`;
+        }
+        if (dateColumns.includes(col)) {
+            const now = new Date().toISOString().slice(0, 10);
+            return `<input type="date" class="form-control form-control-sm add-field" data-col="${col}" value="${now}">`;
+        }
+        return `<input type="text" class="form-control form-control-sm add-field" data-col="${col}" placeholder="...">`;
+    }
+
+    let activeFKColumn = '';
+    let activeRowID = null; 
+    let fkTableData = [];
+
+    async function openFKModal(col, rowID) {
+        activeFKColumn = col;
+        activeRowID = rowID;
+        const targetTable = fkRelations[col];
+        
+        const res = await fetch(`/admin/api/${targetTable}`);
+        const json = await res.json();
+        let data = json.data;
+
+        if (currentTable === 'User_Achievement' && col === 'achievement_id' && currentFilter.user_id) {
+            const existingIds = tableData.map(row => row.achievement_id);
+            data = data.filter(item => !existingIds.includes(item.achievement_id));
+        }
+        if (currentTable === 'User_Dictionary' && col === 'word_id' && currentFilter.user_id) {
+            const existingIds = tableData.map(row => row.word_id);
+            data = data.filter(item => !existingIds.includes(item.word_id));
+        }
+
+        fkTableData = data;
+
+        const headers = Object.keys(fkTableData.length > 0 ? fkTableData[0] : {});
+        document.getElementById('fk-table-name').innerText = targetTable;
+        
+        if (fkTableData.length === 0) {
+            document.getElementById('fk-header').innerHTML = '';
+            document.getElementById('fk-body').innerHTML = '';
+            document.getElementById('fk-empty').classList.remove('d-none');
+        } else {
+            document.getElementById('fk-empty').classList.add('d-none');
+            document.getElementById('fk-header').innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+            renderFKBody(fkTableData, headers, json.pk);
+        }
+
+        new bootstrap.Modal(document.getElementById('fkModal')).show();
+    }
+
+    async function openFKModalForAdd(col) { openFKModal(col, null); }
+    function renderFKBody(data, headers, pk) {
+        document.getElementById('fk-body').innerHTML = data.map(row => `
+            <tr class="fk-row" onclick="selectFK(${row[pk]})">
+                ${headers.map(h => `<td>${row[h]}</td>`).join('')}
+            </tr>
+        `).join('');
+    }
+    function selectFK(id) {
+        const modalEl = document.getElementById('fkModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        if (activeRowID === null) {
+            document.getElementById(`add-fk-${activeFKColumn}`).value = id;
+        } else {
+            markModified(activeRowID, activeFKColumn, id);
+            const row = tableData.find(r => r[currentPK] == activeRowID);
+            if(row) row[activeFKColumn] = id;
+            renderTable(); 
+        }
+    }
+    function filterFKTable() {
+        const term = document.getElementById('fkSearch').value.toLowerCase();
+        if (fkTableData.length === 0) return;
+        const headers = Object.keys(fkTableData[0]);
+        const pk = headers[0]; 
+        const filtered = fkTableData.filter(row => 
+            Object.values(row).some(val => String(val).toLowerCase().includes(term))
+        );
+        renderFKBody(filtered, headers, pk);
+    }
+
+    let modifiedRows = {}; 
+    function markModified(id, col, val) {
+        if (!modifiedRows[id]) modifiedRows[id] = {};
+        modifiedRows[id][col] = val;
+        const tr = document.getElementById(`row-${id}`);
+        tr.classList.add('row-modified');
+        tr.querySelector('.save-btn').classList.remove('d-none');
+    }
+    async function updateRow(id) {
+        const updates = modifiedRows[id];
+        if (!updates) return;
+        try {
+            const res = await fetch(`/admin/api/${currentTable}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            if (res.ok) {
+                delete modifiedRows[id];
+                const tr = document.getElementById(`row-${id}`);
+                tr.classList.remove('row-modified');
+                tr.querySelector('.save-btn').classList.add('d-none');
+                const row = tableData.find(r => r[currentPK] == id);
+                Object.assign(row, updates);
+            } else { alert('Помилка збереження'); }
+        } catch (e) { alert('Помилка: ' + e); }
+    }
+    async function saveNewRecord() {
+        const inputs = document.querySelectorAll('.add-field');
+        const newData = {};
+        let isValid = true;
+        inputs.forEach(input => {
+            newData[input.dataset.col] = input.value;
+            if (input.dataset.col === 'email') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(input.value)) {
+                    alert('Некоректний формат Email!');
+                    isValid = false;
+                }
+            }
+        });
+        Object.assign(newData, currentFilter);
+        if (uniqueColumns[currentTable]) {
+            const field = uniqueColumns[currentTable];
+            const val = newData[field];
+            if (val) {
+                const exists = tableData.some(row => String(row[field]).toLowerCase() === String(val).toLowerCase());
+                if (exists) {
+                    alert(`Помилка: Запис з таким "${field}" вже існує!`);
+                    isValid = false;
+                }
+            }
+        }
+        if (!isValid) return;
+        try {
+            const res = await fetch(`/admin/api/${currentTable}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newData)
+            });
+            const json = await res.json();
+            if (res.ok) { loadTableData(); } else { alert('Помилка сервера: ' + json.error); }
+        } catch (e) { alert('Помилка з\'єднання'); }
+    }
+    async function deleteRecord(id) {
+        if (!confirm('Ви впевнені, що хочете видалити цей запис?')) return;
+        await fetch(`/admin/api/${currentTable}/${id}`, { method: 'DELETE' });
+        tableData = tableData.filter(r => r[currentPK] != id);
+        renderTable();
+    }
+    function filterTable() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#table-body tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+        });
+    }
+    let sortDir = 1;
+    function sortTable(col) {
+        sortDir *= -1;
+        tableData.sort((a, b) => {
+            if (a[col] < b[col]) return -1 * sortDir;
+            if (a[col] > b[col]) return 1 * sortDir;
+            return 0;
+        });
+        renderTable();
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
