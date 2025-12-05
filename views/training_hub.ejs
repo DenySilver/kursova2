@@ -99,16 +99,13 @@
     function createCardHTML(cat) {
         let borderClass = 'border-success'; 
         let bgBadge = 'bg-success';
-        let icon = '🌱'; 
 
         if (cat.difficulty_level === 'Medium') { 
             borderClass = 'border-warning'; 
             bgBadge = 'bg-warning text-dark'; 
-            icon = '⚡';
         } else if (cat.difficulty_level === 'Hard') { 
             borderClass = 'border-danger'; 
             bgBadge = 'bg-danger'; 
-            icon = '🔥';
         }
 
         const link = `/study/user/${userId}/cards/${langId}/cat/${cat.category_id}`;
@@ -117,7 +114,6 @@
         let progressColor = 'bg-primary';
         if (cat.progress === 100) progressColor = 'bg-success';
 
-        // Текст кнопки
         let btnText = "Вчити картки ➔";
         let btnClass = "btn-outline-dark";
         if (cat.progress === 100) {
@@ -134,13 +130,11 @@
                             <span class="badge ${bgBadge} rounded-pill">${cat.difficulty_level}</span>
                         </div>
                         
-                        <!-- Статистика слів -->
                         <div class="d-flex justify-content-between small text-muted mb-1">
                             <span>${cat.learned_words || 0} / ${cat.total_words || 0} слів</span>
                             <span class="fw-bold">${cat.progress}%</span>
                         </div>
 
-                        <!-- Прогрес бар -->
                         <div class="progress mb-4" style="height: 8px;">
                             <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${cat.progress}%"></div>
                         </div>
